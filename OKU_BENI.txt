@@ -1,0 +1,17 @@
+CANLI TURKCE TRANSKRIPT
+=======================
+
+1) BASLAT.bat dosyasina cift tikla.
+   - Ilk seferde Python ve gerekli paketler otomatik kurulur,
+     yapay zeka modeli indirilir (birkac dakika surebilir).
+2) Ekranda "Dinleniyor" yazinca videoyu oynat.
+   Konusmalar birkac saniye gecikmeyle ekrana yazilir.
+3) Bitince siyah pencerede Ctrl + C'ye bas.
+   Notlar "notlar" klasorune kaydedilir ve klasor otomatik acilir.
+
+MIKROFON_ILE_BASLAT.bat : Bilgisayar sesi yerine mikrofonu dinler (ders, toplanti).
+
+transkript.py : Kayitli bir video dosyasini ya da YouTube linkini yaziya doker.
+   Kullanim (bu klasorde cmd acip): python transkript.py video.mp4
+
+Windows "bilinmeyen yayinci" uyarisi verirse: "Ek bilgi" > "Yine de calistir".

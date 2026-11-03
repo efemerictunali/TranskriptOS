@@ -1,0 +1,25 @@
+# Cikti klasorleri
+notlar/
+transkriptler/
+
+# Kurulum isareti
+.kurulum_tamam
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Medya dosyalari
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.mp3
+*.wav
+*.m4a
+
+# Bu yukleme dosyasi repoya girmesin
+GITHUB_YUKLE.bat
