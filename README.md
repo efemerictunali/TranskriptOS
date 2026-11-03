@@ -1,4 +1,4 @@
-# Transkript
+# TranskriptOS
 
 Videolardan **Türkçe transkript** çıkaran basit araçlar. Bilgisayarda çalan sesi canlı olarak dinleyip anlık not alabilir ya da kayıtlı bir video dosyasını veya YouTube linkini yazıya dökebilir.
 
