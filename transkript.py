@@ -30,6 +30,22 @@ from pathlib import Path
 MEDYA_UZANTILARI = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv",
                     ".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac"}
 
+# Her dil için Whisper'a verilen ipucu cümlesi (noktalama/doğruluk artırır).
+DIL_IPUCU = {
+    "tr": "Merhaba, bu bir Türkçe konuşmadır. Noktalama işaretlerine dikkat edilmiştir.",
+    "en": "Hello, this is English speech. Punctuation has been applied carefully.",
+}
+
+# Bu boyutların İngilizceye özel (.en) sürümü, İngilizcede daha doğru ve hızlıdır.
+EN_MODELLER = {"tiny", "base", "small", "medium"}
+
+
+def model_adini_coz(model_adi: str, dil: str) -> str:
+    """Dil İngilizce ve model küçük bir boyutsa .en sürümünü kullanır."""
+    if dil == "en" and model_adi in EN_MODELLER:
+        return model_adi + ".en"
+    return model_adi
+
 
 def zaman_srt(saniye: float) -> str:
     ms = int(round(saniye * 1000))
@@ -54,26 +70,27 @@ def linkten_indir(url: str, hedef_klasor: str) -> Path:
     return dosyalar[-1]
 
 
-def model_yukle(model_adi: str):
+def model_yukle(model_adi: str, dil: str = "tr"):
     from faster_whisper import WhisperModel
     try:
         import torch  # noqa: F401
         gpu = torch.cuda.is_available()
     except ImportError:
         gpu = False
+    model_adi = model_adini_coz(model_adi, dil)
     cihaz, tip = ("cuda", "float16") if gpu else ("cpu", "int8")
     print(f"🧠 Model yükleniyor: {model_adi} ({cihaz})")
     return WhisperModel(model_adi, device=cihaz, compute_type=tip)
 
 
-def transkript_cikar(model, dosya: Path, cikti_klasoru: Path):
-    print(f"🎙️  Transkript çıkarılıyor: {dosya.name}")
+def transkript_cikar(model, dosya: Path, cikti_klasoru: Path, dil: str = "tr"):
+    print(f"🎙️  Transkript çıkarılıyor ({dil}): {dosya.name}")
     segmentler, bilgi = model.transcribe(
         str(dosya),
-        language="tr",
+        language=dil,
         vad_filter=True,          # sessiz kısımları atlar, halüsinasyonu azaltır
         beam_size=5,
-        initial_prompt="Merhaba, bu bir Türkçe konuşmadır. Noktalama işaretlerine dikkat edilmiştir.",
+        initial_prompt=DIL_IPUCU.get(dil, ""),
     )
 
     cikti_klasoru.mkdir(parents=True, exist_ok=True)
@@ -97,16 +114,18 @@ def main():
     p.add_argument("girdi", help="Video dosyası, klasör veya URL")
     p.add_argument("--model", default="large-v3-turbo",
                    help="tiny | base | small | medium | large-v3 | large-v3-turbo (varsayılan)")
+    p.add_argument("--dil", default="tr",
+                   help="Konuşma dili: tr (Türkçe, varsayılan) | en (İngilizce) | diğer Whisper dil kodları")
     p.add_argument("--cikti", default="transkriptler", help="Çıktı klasörü")
     a = p.parse_args()
 
     cikti = Path(a.cikti)
-    model = model_yukle(a.model)
+    model = model_yukle(a.model, a.dil)
 
     if a.girdi.startswith(("http://", "https://")):
         with tempfile.TemporaryDirectory() as tmp:
             dosya = linkten_indir(a.girdi, tmp)
-            transkript_cikar(model, dosya, cikti)
+            transkript_cikar(model, dosya, cikti, a.dil)
         return
 
     yol = Path(a.girdi)
@@ -115,9 +134,9 @@ def main():
         if not dosyalar:
             sys.exit("Klasörde video/ses dosyası bulunamadı.")
         for f in dosyalar:
-            transkript_cikar(model, f, cikti)
+            transkript_cikar(model, f, cikti, a.dil)
     elif yol.is_file():
-        transkript_cikar(model, yol, cikti)
+        transkript_cikar(model, yol, cikti, a.dil)
     else:
         sys.exit(f"Bulunamadı: {a.girdi}")
 

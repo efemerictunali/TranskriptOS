@@ -39,6 +39,15 @@ BLOK_SN = 0.5         # Her okumada alınan ses süresi (saniye)
 MIN_PARCA_SN = 3.0    # Bir parçayı en erken bu süreden sonra işle
 MAX_PARCA_SN = 12.0   # Sessizlik gelmese de bu sürede mutlaka işle
 
+# Her dil için, parça yoksa kullanılacak başlangıç ipucu.
+DIL_IPUCU = {
+    "tr": "Türkçe konuşma.",
+    "en": "English speech.",
+}
+
+# Bu boyutların İngilizceye özel (.en) sürümü, İngilizcede daha doğru ve hızlıdır.
+EN_MODELLER = {"tiny", "base", "small", "medium"}
+
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
@@ -84,7 +93,7 @@ def dinleyici(kaynak, q: queue.Queue, dur: threading.Event):
             q.put(mono.astype(np.float32))
 
 
-def model_yukle(model_adi: str | None):
+def model_yukle(model_adi: str | None, dil: str = "tr"):
     from faster_whisper import WhisperModel
     try:
         import ctranslate2
@@ -93,6 +102,8 @@ def model_yukle(model_adi: str | None):
         gpu = False
     if model_adi is None:
         model_adi = "large-v3-turbo" if gpu else "small"
+    if dil == "en" and model_adi in EN_MODELLER:
+        model_adi += ".en"      # İngilizceye özel sürüm
     cihaz, tip = ("cuda", "float16") if gpu else ("cpu", "int8")
     print(f"Model yükleniyor: {model_adi} ({'GPU' if gpu else 'CPU'}) ...")
     return WhisperModel(model_adi, device=cihaz, compute_type=tip), gpu
@@ -104,6 +115,8 @@ def main():
     p.add_argument("--cihaz", help="Belirli bir ses cihazı (adın bir kısmı yeterli)")
     p.add_argument("--listele", action="store_true", help="Ses cihazlarını listele ve çık")
     p.add_argument("--model", help="tiny | base | small | medium | large-v3-turbo | large-v3")
+    p.add_argument("--dil", default="tr",
+                   help="Konuşma dili: tr (Türkçe, varsayılan) | en (İngilizce) | diğer Whisper dil kodları")
     p.add_argument("--esik", type=float, default=0.005,
                    help="Sessizlik eşiği (ses kısıkken kelime kaçırıyorsa düşür, ör. 0.002)")
     p.add_argument("--klasor", default="notlar", help="Notların kaydedileceği klasör")
@@ -113,7 +126,7 @@ def main():
         cihazlari_listele()
         return
 
-    model, gpu = model_yukle(a.model)
+    model, gpu = model_yukle(a.model, a.dil)
     kaynak = kaynak_sec(a.mikrofon, a.cihaz)
 
     Path(a.klasor).mkdir(exist_ok=True)
@@ -154,10 +167,10 @@ def main():
 
             segmentler, _ = model.transcribe(
                 ses,
-                language="tr",
+                language=a.dil,
                 beam_size=5 if gpu else 1,
                 vad_filter=True,
-                initial_prompt=onceki_metin[-200:] or "Türkçe konuşma.",
+                initial_prompt=onceki_metin[-200:] or DIL_IPUCU.get(a.dil, ""),
             )
             metin = " ".join(s.text.strip() for s in segmentler).strip()
             if not metin:

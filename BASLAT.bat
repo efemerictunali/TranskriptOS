@@ -29,7 +29,7 @@ rem ---- Paketleri ilk seferde kur ----
 if not exist ".kurulum_tamam" (
   echo Gerekli paketler kuruluyor, ilk seferde birkac dakika surer...
   %PY% -m pip install --upgrade pip
-  %PY% -m pip install faster-whisper soundcard "numpy<2"
+  %PY% -m pip install faster-whisper soundcard "numpy<2" "av<14"
   if errorlevel 1 (
     echo Paket kurulumunda hata olustu. Ekrandaki hatayi Claude'a gonder.
     pause
